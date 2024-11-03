@@ -1,0 +1,233 @@
+/* Cadastro.css */
+
+
+
+/* Estilos Gerais */
+
+
+  
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background-color: #f7fafc;
+    color: #1a202c;
+    padding: 16px;
+  }
+  
+  .logo-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px; /* Reduzindo a margem inferior */
+  }
+  
+  .logo-image {
+    height: 60px; /* Reduzindo o tamanho da logo para economizar espaço */
+    width: auto;
+    margin-top: 8px;
+  }
+  
+  .form-container {
+    background-color: #ffffff;
+    padding: 24px; /* Reduzindo o padding interno */
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 360px;
+    text-align: center;
+  }
+  
+  /* Estilos do Formulário */
+  .form-title {
+    font-size: 1.5rem; /* Ajustando o tamanho do título */
+    font-weight: bold;
+    color: #2d3748;
+    margin-bottom: 24px; /* Reduzindo o espaçamento inferior */
+  }
+  
+  .input-field {
+    width: 100%;
+    border: 1px solid #cbd5e0;
+    background-color: #f7fafc;
+    color: #2d3748;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+}
+
+  
+  .error-message {
+    color: #f56565;
+    font-size: 0.875rem;
+  }
+  
+  .checkbox-container {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px; /* Reduzindo o espaçamento inferior */
+  }
+  
+  .checkbox-input {
+    width: 35px;
+    height: 35px;
+    margin-right: 8px;
+  }
+  
+  .checkbox-label {
+    text-align: left;
+    color: #4a5568;
+    font-size: 0.75rem; /* Reduzindo o tamanho da fonte do texto */
+  }
+  
+  .terms-link {
+    color: #4299e1;
+    text-decoration: underline;
+  }
+  
+  /* Botão de Enviar */
+  .submit-button {
+    width: 100%;
+    background-color: #3182ce;
+    color: #ffffff;
+    padding: 12px; /* Reduzindo o padding do botão */
+    border-radius: 8px;
+    font-size: 1rem; /* Reduzindo o tamanho da fonte do botão */
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    margin-top: 12px; /* Adicionando espaço para evitar sobreposição */
+  }
+  
+  .submit-button:hover {
+    background-color: #2b6cb0;
+  }
+
+
+  /* Overlay para o loading */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  
+  /* Estilo para a bolinha de loading */
+  .loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #3182ce;
+    border-top: 5px solid #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  
+  /* Animação de rotação */
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+ 
+  
+  /* Responsividade para dispositivos móveis (360px) */
+  @media (max-width: 360px) {
+    .form-container {
+      padding: 16px;
+      max-width: 320px;
+    }
+    
+    .logo-image {
+      height: 50px;
+    }
+  
+    .input-field {
+      font-size: 0.875rem;
+      padding: 10px;
+    }
+  
+    .form-title {
+      font-size: 1.25rem;
+      margin-bottom: 16px;
+    }
+  
+    .checkbox-label {
+      font-size: 0.75rem;
+    }
+  
+    .submit-button {
+      font-size: 0.875rem;
+      padding: 10px;
+    }
+  }
+  
+
+  /* Responsividade para dispositivos móveis (375px) */
+@media (max-width: 375px) {
+    .form-container {
+      padding: 16px;
+      max-width: 320px;
+    }
+    
+    .logo-image {
+      height: 50px;
+    }
+  
+    .input-field {
+      font-size: 0.875rem;
+      padding: 8px;
+    }
+  
+    .form-title {
+      font-size: 1.25rem;
+      margin-bottom: 16px;
+    }
+  
+    .checkbox-label {
+      font-size: 0.75rem;
+    }
+  
+    .submit-button {
+      font-size: 0.875rem;
+      padding: 8px;
+    }
+  }
+
+
+  /* Responsividade para tablets e resoluções maiores (exemplo: iPad Pro) */
+@media (min-width: 768px) {
+    .form-container {
+      padding: 10px; /* Aumentando o padding interno */
+      max-width: 800px; /* Aumentando a largura máxima para ocupar mais espaço */
+    }
+    
+    .logo-image {
+      height: 140px; /* Maior destaque para a logo */
+    }
+  
+    .input-field {
+      font-size: 1.25rem; /* Aumentando o tamanho da fonte para melhor leitura */
+      padding: 18px; /* Maior espaçamento interno nos campos */
+    }
+  
+    .form-title {
+      font-size: 2.25rem; /* Título maior para dispositivos grandes */
+      margin-bottom: 32px; /* Mais espaçamento abaixo do título */
+    }
+  
+    .checkbox-label {
+      font-size: 1rem; /* Ajuste no tamanho da fonte do texto dos termos */
+    }
+  
+    .submit-button {
+      font-size: 1.25rem; /* Aumentando o tamanho da fonte do botão */
+      padding: 18px;
+    }
+  }

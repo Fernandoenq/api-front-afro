@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { isValidCPF, formatPhoneNumber } from '../utils/validators';
+import { isValidCPF, formatPhoneNumber, isValidBirthDate } from '../utils/validators';
 import Alert from '../components/Alert';
 import logo from '../assets/logo.png';
+import '../estilos/Cadastro.css';
 
 const Cadastro = () => {
   const location = useLocation();
@@ -18,19 +19,18 @@ const Cadastro = () => {
 
   const [whatsappError, setWhatsappError] = useState('');
   const [cpfError, setCpfError] = useState('');
+  const [birthDateError, setBirthDateError] = useState('');
   const [numbersFromUrl, setNumbersFromUrl] = useState([]);
   const [uuid, setUuid] = useState('');
   const [alert, setAlert] = useState({ message: '', type: '' });
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const pathSegments = location.pathname.split('/').slice(2);
-
-    // Extrai o UUID como o primeiro segmento e salva no localStorage
     const extractedUuid = pathSegments[0];
     localStorage.setItem('cadastroUUID', extractedUuid);
     setUuid(extractedUuid);
 
-    // Extrai os números após o UUID
     const numbers = pathSegments.slice(1).map(segment => parseInt(segment, 10)).filter(num => !isNaN(num));
     localStorage.setItem('cadastroNumbers', JSON.stringify(numbers));
     setNumbersFromUrl(numbers);
@@ -39,30 +39,33 @@ const Cadastro = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name === 'whatsapp') {
-      const formattedValue = formatPhoneNumber(value);
-      setWhatsappError(formattedValue.length === 15 ? '' : 'O WhatsApp deve incluir DDD + 9 dígitos.');
+    if (name === 'birthDate') {
+      let formattedValue = value.replace(/\D/g, '');
+
+      if (formattedValue.length >= 5) {
+        formattedValue = `${formattedValue.slice(0, 2)}/${formattedValue.slice(2, 4)}/${formattedValue.slice(4, 8)}`;
+      } else if (formattedValue.length >= 3) {
+        formattedValue = `${formattedValue.slice(0, 2)}/${formattedValue.slice(2, 4)}`;
+      }
+
       setFormData({
         ...formData,
         [name]: formattedValue,
       });
+    } else if (name === 'whatsapp') {
+      setFormData({
+        ...formData,
+        [name]: formatPhoneNumber(value),
+      });
     } else if (name === 'cpf') {
       const rawValue = value.replace(/\D/g, '');
-
-      if (rawValue.length === 11 && isValidCPF(rawValue)) {
-        setCpfError('');
-        const formattedCPF = `${rawValue.slice(0, 3)}.${rawValue.slice(3, 6)}.${rawValue.slice(6, 9)}-${rawValue.slice(9)}`;
-        setFormData({
-          ...formData,
-          [name]: formattedCPF,
-        });
-      } else {
-        setCpfError('CPF inválido. Por favor, insira um CPF válido.');
-        setFormData({
-          ...formData,
-          [name]: rawValue,
-        });
-      }
+      const formattedCPF = rawValue
+        .replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+        .slice(0, 14);
+      setFormData({
+        ...formData,
+        [name]: formattedCPF,
+      });
     } else {
       setFormData({
         ...formData,
@@ -71,89 +74,120 @@ const Cadastro = () => {
     }
   };
 
+  const handleWhatsappBlur = () => {
+    const rawValue = formData.whatsapp.replace(/\D/g, '');
+    if (rawValue.length === 0) {
+      setWhatsappError('');
+    } else if (rawValue.length !== 11) {
+      setWhatsappError('O WhatsApp deve incluir DDD + 9 dígitos.');
+    } else {
+      setWhatsappError('');
+    }
+  };
+
+  const handleCpfBlur = () => {
+    const rawValue = formData.cpf.replace(/\D/g, '');
+    if (rawValue.length === 11 && isValidCPF(rawValue)) {
+      setCpfError('');
+    } else if (rawValue.length > 0) {
+      setCpfError('CPF inválido. Por favor, insira um CPF válido.');
+    } else {
+      setCpfError('');
+    }
+  };
+
+  const handleBirthDateBlur = () => {
+    if (formData.birthDate.trim() === '') {
+      setBirthDateError('');
+      return;
+    }
+  
+    if (!isValidBirthDate(formData.birthDate)) {
+      setBirthDateError('Data de nascimento inválida. Por favor, insira uma data válida.');
+    } else {
+      setBirthDateError('');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (whatsappError || cpfError) {
+
+    handleWhatsappBlur();
+    handleCpfBlur();
+    handleBirthDateBlur();
+
+    if (whatsappError || cpfError || birthDateError) {
       setAlert({
         message: 'Por favor, corrija os erros antes de enviar.',
         type: 'error',
       });
       return;
     }
-  
-    // Obter a data atual e formatá-la como "YYYY-MM-DD"
-    const currentDate = new Date();
-    const formattedDate = currentDate.toISOString().split('T')[0];
-  
-    // Dados a serem enviados para a API
-    const dataToSend = {
-      RegisterDate: formattedDate,
-      PersonName: formData.nome,
-      Cpf: formData.cpf.replace(/\D/g, ''), // Remove a formatação do CPF
-      Phone: "55" + formData.whatsapp.replace(/\D/g, ''), // Remove a formatação do telefone
-      BirthDate: formData.birthDate,
-      Mail: formData.email,
-      HasAcceptedParticipation: formData.termsAccepted,
-      ImageIds: numbersFromUrl.map((num) => `${num}.png`),
-      AuthenticationId: uuid,
-      HasAcceptedPromotion: true
-    };
-  
-    // Exibe no console como a API receberia os dados
-    console.log("Dados a serem enviados para a API:", dataToSend);
-  
-    // Comentando a chamada para a API, pois ainda não existe
-    
+
+    setIsLoading(true);
+
     try {
       const response = await fetch('http://3.133.92.17:3335/Person/Person', {
         method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(dataToSend),
-  });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          RegisterDate: new Date().toISOString().split('T')[0],
+          PersonName: formData.nome,
+          Cpf: formData.cpf.replace(/\D/g, ''),
+          Phone: "55" + formData.whatsapp.replace(/\D/g, ''),
+          BirthDate: formData.birthDate,
+          Mail: formData.email,
+          HasAcceptedParticipation: formData.termsAccepted,
+          ImageIds: numbersFromUrl.map((num) => `${num}.png`),
+          AuthenticationId: uuid,
+          HasAcceptedPromotion: true
+        }),
+      });
 
-  if (response.ok) {
-    setAlert({
-      message: 'Cadastro enviado com sucesso!',
-      type: 'success',
-    });
-  } else if (response.status === 422) {
-    // Tenta extrair a mensagem de erro do JSON
-    const errorData = await response.json();
-    const errorMessage = errorData.Errors ? errorData.Errors.join(', ') : 'Erro desconhecido';
-
-    setAlert({
-      message: `Erro ao enviar o cadastro: ${errorMessage}`,
-      type: 'error',
-    });
-  } else {
-    setAlert({
-      message: 'Erro ao enviar o cadastro. Por favor, tente novamente.',
-      type: 'error',
-    });
-  }
-} catch (error) {
-  setAlert({
-    message: `Erro de rede: ${error.message}`,
-    type: 'error',
-  });
-}
-    
+      if (response.ok) {
+        setAlert({
+          message: 'Cadastro enviado com sucesso!',
+          type: 'success',
+        });
+      } else if (response.status === 422) {
+        const errorData = await response.json();
+        const errorMessage = errorData.Errors ? errorData.Errors.join(', ') : 'Erro desconhecido';
+        setAlert({
+          message: `Erro ao enviar o cadastro: ${errorMessage}`,
+          type: 'error',
+        });
+      } else {
+        setAlert({
+          message: 'Erro ao enviar o cadastro. Por favor, tente novamente.',
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      setAlert({
+        message: `Erro de rede: ${error.message}`,
+        type: 'error',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
-  
-  
 
   const closeAlert = () => setAlert({ message: '', type: '' });
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 text-gray-900 p-4">
-      {/* Logo fora do container do formulário */}
-      <div className="flex justify-center mb-8 mt-0">
-        <img src={logo} alt="Logo" className="h-20 w-auto mt-4" />
+    <div className="container">
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+        </div>
+      )}
+
+      <div className="logo-container">
+        <img src={logo} alt="Logo" className="logo-image" />
       </div>
 
-      {/* Container do formulário */}
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-lg text-center">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Cadastro</h1>
+      <div className="form-container">
+        <h1 className="form-title">Cadastro</h1>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <input
@@ -162,7 +196,7 @@ const Cadastro = () => {
             placeholder="Nome"
             value={formData.nome}
             onChange={handleChange}
-            className="w-full border border-gray-300 bg-gray-100 text-gray-800 p-4 rounded-lg text-lg placeholder-gray-500"
+            className="input-field"
             required
           />
           <input
@@ -171,7 +205,7 @@ const Cadastro = () => {
             placeholder="Email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full border border-gray-300 bg-gray-100 text-gray-800 p-4 rounded-lg text-lg placeholder-gray-500"
+            className="input-field"
             required
           />
           <input
@@ -180,46 +214,51 @@ const Cadastro = () => {
             placeholder="WhatsApp (DDD + número)"
             value={formData.whatsapp}
             onChange={handleChange}
-            className="w-full border border-gray-300 bg-gray-100 text-gray-800 p-4 rounded-lg text-lg placeholder-gray-500"
+            onBlur={handleWhatsappBlur}
+            className="input-field"
             required
           />
-          {whatsappError && <p className="text-red-500 text-sm">{whatsappError}</p>}
-
+          {whatsappError && <p className="error-message">{whatsappError}</p>}
+  
           <input
             type="text"
             name="cpf"
             placeholder="CPF (XXX.XXX.XXX-XX)"
             value={formData.cpf}
             onChange={handleChange}
-            className="w-full border border-gray-300 bg-gray-100 text-gray-800 p-4 rounded-lg text-lg placeholder-gray-500"
+            onBlur={handleCpfBlur}
+            className="input-field"
             required
           />
-          {cpfError && <p className="text-red-500 text-sm">{cpfError}</p>}
-
+          {cpfError && <p className="error-message">{cpfError}</p>}
+  
           <input
-            type="date"
+            type="text"
             name="birthDate"
             value={formData.birthDate}
             onChange={handleChange}
-            className="w-full border border-gray-300 bg-gray-100 text-gray-800 p-4 rounded-lg text-lg placeholder-gray-500"
+            onBlur={handleBirthDateBlur}
+            placeholder="dd/mm/aaaa"
+            className="input-field"
             required
           />
+          {birthDateError && <p className="error-message">{birthDateError}</p>}
 
-          <div className="flex items-start space-x-2">
+          <div className="checkbox-container">
             <input
               type="checkbox"
               name="termsAccepted"
               checked={formData.termsAccepted}
               onChange={handleChange}
-              className="w-16 h-16 mr-2 bg-gray-700 border-gray-600 text-blue-500 focus:ring-0 focus:ring-offset-0"
+              className="checkbox-input"
               required
             />
-            <label className="text-left text-gray-700 text-sm">
-              Concordo com a coleta e uso dos meus dados pessoais pela Afro Punk para comunicação e marketing, conforme a <a href="/termos" className="text-blue-500 underline">Política de Privacidade</a>.
+            <label className="checkbox-label">
+              Concordo com a coleta e uso dos meus dados pessoais pela Afro Punk para comunicação e marketing, conforme a <a href="/termos" className="terms-link">Política de Privacidade</a>.
             </label>
           </div>
           
-          <button type="submit" className="w-full bg-blue-600 text-white p-4 rounded-lg text-lg font-bold hover:bg-blue-700 transition duration-300">
+          <button type="submit" className="submit-button">
             Enviar
           </button>
         </form>

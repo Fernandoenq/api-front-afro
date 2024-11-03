@@ -36,3 +36,27 @@ export const isValidCPF = (cpf) => {
     return rawValue; // Retorna sem formatação se não tiver 11 dígitos
   };
   
+
+  export const isValidBirthDate = (date) => {
+    const dateRegex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const match = date.match(dateRegex);
+  
+    if (!match) return false;
+  
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1; // Mês é zero-indexado no JavaScript
+    const year = parseInt(match[3], 10);
+  
+    const parsedDate = new Date(year, month, day);
+    const isValidDate =
+      parsedDate.getFullYear() === year &&
+      parsedDate.getMonth() === month &&
+      parsedDate.getDate() === day;
+  
+    const currentYear = new Date().getFullYear();
+    if (year > currentYear || year < 1900) {
+      return false;
+    }
+  
+    return isValidDate;
+  };
