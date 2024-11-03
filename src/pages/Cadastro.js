@@ -127,7 +127,7 @@ const Cadastro = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://3.133.92.17:3335/Person/Person', {
+      const response = await fetch('http://54.94.17.35:3335/Person/Person', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
