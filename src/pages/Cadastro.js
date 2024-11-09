@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { isValidCPF, formatPhoneNumber, isValidBirthDate } from '../utils/validators';
+import { formatPhoneNumber } from '../utils/validators';
 import Alert from '../components/Alert';
 import logo from '../assets/logo.png';
 import '../estilos/Cadastro.css';
@@ -10,22 +10,18 @@ const Cadastro = () => {
 
   const [formData, setFormData] = useState({
     nome: '',
-    email: '',
     whatsapp: '',
-    cpf: '',
-    birthDate: '',
     termsAccepted: false,
   });
 
   const [whatsappError, setWhatsappError] = useState('');
-  const [cpfError, setCpfError] = useState('');
-  const [birthDateError, setBirthDateError] = useState('');
   const [numbersFromUrl, setNumbersFromUrl] = useState([]);
   const [uuid, setUuid] = useState('');
   const [alert, setAlert] = useState({ message: '', type: '' });
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
+    // Mantém a lógica original de extração do UUID e ImageIds
     const pathSegments = location.pathname.split('/').slice(2);
     const extractedUuid = pathSegments[0];
     localStorage.setItem('cadastroUUID', extractedUuid);
@@ -39,32 +35,10 @@ const Cadastro = () => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name === 'birthDate') {
-      let formattedValue = value.replace(/\D/g, '');
-
-      if (formattedValue.length >= 5) {
-        formattedValue = `${formattedValue.slice(0, 2)}/${formattedValue.slice(2, 4)}/${formattedValue.slice(4, 8)}`;
-      } else if (formattedValue.length >= 3) {
-        formattedValue = `${formattedValue.slice(0, 2)}/${formattedValue.slice(2, 4)}`;
-      }
-
-      setFormData({
-        ...formData,
-        [name]: formattedValue,
-      });
-    } else if (name === 'whatsapp') {
+    if (name === 'whatsapp') {
       setFormData({
         ...formData,
         [name]: formatPhoneNumber(value),
-      });
-    } else if (name === 'cpf') {
-      const rawValue = value.replace(/\D/g, '');
-      const formattedCPF = rawValue
-        .replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
-        .slice(0, 14);
-      setFormData({
-        ...formData,
-        [name]: formattedCPF,
       });
     } else {
       setFormData({
@@ -85,65 +59,43 @@ const Cadastro = () => {
     }
   };
 
-  const handleCpfBlur = () => {
-    const rawValue = formData.cpf.replace(/\D/g, '');
-    if (rawValue.length === 11 && isValidCPF(rawValue)) {
-      setCpfError('');
-    } else if (rawValue.length > 0) {
-      setCpfError('CPF inválido. Por favor, insira um CPF válido.');
-    } else {
-      setCpfError('');
-    }
-  };
-
-  const handleBirthDateBlur = () => {
-    if (formData.birthDate.trim() === '') {
-      setBirthDateError('');
-      return;
-    }
-  
-    if (!isValidBirthDate(formData.birthDate)) {
-      setBirthDateError('Data de nascimento inválida. Por favor, insira uma data válida.');
-    } else {
-      setBirthDateError('');
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     handleWhatsappBlur();
-    handleCpfBlur();
-    handleBirthDateBlur();
-
-    if (whatsappError || cpfError || birthDateError) {
+  
+    if (whatsappError) {
       setAlert({
         message: 'Por favor, corrija os erros antes de enviar.',
         type: 'error',
       });
       return;
     }
-
+  
     setIsLoading(true);
-
+  
+    const requestBody = {
+      RegisterDate: new Date().toISOString().split('T')[0],
+      PersonName: formData.nome,
+      Cpf: "44134412811",
+      Phone: "55" + formData.whatsapp.replace(/\D/g, ''),
+      BirthDate: "01/01/2000",
+      Mail: "default@example.com",
+      HasAcceptedParticipation: formData.termsAccepted,
+      ImageIds: numbersFromUrl.map((num) => `${num}.png`),
+      AuthenticationId: uuid,
+      HasAcceptedPromotion: true,
+    };
+  
+    // Imprimir o body no console
+    console.log('Request Body:', requestBody);
+  
     try {
       const response = await fetch('http://52.67.171.76:3335/Person/Person', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          RegisterDate: new Date().toISOString().split('T')[0],
-          PersonName: formData.nome,
-          Cpf: formData.cpf.replace(/\D/g, ''),
-          Phone: "55" + formData.whatsapp.replace(/\D/g, ''),
-          BirthDate: formData.birthDate,
-          Mail: formData.email,
-          HasAcceptedParticipation: formData.termsAccepted,
-          ImageIds: numbersFromUrl.map((num) => `${num}.png`),
-          AuthenticationId: uuid,
-          HasAcceptedPromotion: true
-        }),
+        body: JSON.stringify(requestBody),
       });
-
       if (response.ok) {
         setAlert({
           message: 'Cadastro enviado com sucesso!',
@@ -153,7 +105,7 @@ const Cadastro = () => {
         const errorData = await response.json();
         const errorMessage = errorData.Errors ? errorData.Errors.join(', ') : 'Erro desconhecido';
         setAlert({
-          message: `Erro ao enviar o cadastro: ${errorMessage}`,
+          message: errorMessage,
           type: 'error',
         });
       } else {
@@ -171,7 +123,7 @@ const Cadastro = () => {
       setIsLoading(false);
     }
   };
-
+  
   const closeAlert = () => setAlert({ message: '', type: '' });
 
   return (
@@ -200,15 +152,6 @@ const Cadastro = () => {
             required
           />
           <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={formData.email}
-            onChange={handleChange}
-            className="input-field"
-            required
-          />
-          <input
             type="text"
             name="whatsapp"
             placeholder="WhatsApp (DDD + número)"
@@ -219,30 +162,6 @@ const Cadastro = () => {
             required
           />
           {whatsappError && <p className="error-message">{whatsappError}</p>}
-  
-          <input
-            type="text"
-            name="cpf"
-            placeholder="CPF (XXX.XXX.XXX-XX)"
-            value={formData.cpf}
-            onChange={handleChange}
-            onBlur={handleCpfBlur}
-            className="input-field"
-            required
-          />
-          {cpfError && <p className="error-message">{cpfError}</p>}
-  
-          <input
-            type="text"
-            name="birthDate"
-            value={formData.birthDate}
-            onChange={handleChange}
-            onBlur={handleBirthDateBlur}
-            placeholder="dd/mm/aaaa"
-            className="input-field"
-            required
-          />
-          {birthDateError && <p className="error-message">{birthDateError}</p>}
 
           <div className="checkbox-container">
             <input
@@ -254,7 +173,7 @@ const Cadastro = () => {
               required
             />
             <label className="checkbox-label">
-              Concordo com a coleta e uso dos meus dados pessoais pela Afro Punk para comunicação e marketing, conforme a <a href="/termos" className="terms-link">Política de Privacidade</a>.
+              Concordo com a coleta e uso dos meus dados pessoais pela Afro Punk para comunicação e marketing.
             </label>
           </div>
           
