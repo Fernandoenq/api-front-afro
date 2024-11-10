@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { formatPhoneNumber } from '../utils/validators';
+import { isValidCPF, formatPhoneNumber } from '../utils/validators';
 import Alert from '../components/Alert';
 import logo from '../assets/logo.png';
 import '../estilos/Cadastro.css';
@@ -11,10 +11,12 @@ const Cadastro = () => {
   const [formData, setFormData] = useState({
     nome: '',
     whatsapp: '',
+    cpf: '',
     termsAccepted: false,
   });
 
   const [whatsappError, setWhatsappError] = useState('');
+  const [cpfError, setCpfError] = useState('');
   const [numbersFromUrl, setNumbersFromUrl] = useState([]);
   const [uuid, setUuid] = useState('');
   const [alert, setAlert] = useState({ message: '', type: '' });
@@ -40,6 +42,15 @@ const Cadastro = () => {
         ...formData,
         [name]: formatPhoneNumber(value),
       });
+    } else if (name === 'cpf') {
+      const rawValue = value.replace(/\D/g, '');
+      const formattedCPF = rawValue
+        .replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+        .slice(0, 14);
+      setFormData({
+        ...formData,
+        [name]: formattedCPF,
+      });
     } else {
       setFormData({
         ...formData,
@@ -59,12 +70,24 @@ const Cadastro = () => {
     }
   };
 
+  const handleCpfBlur = () => {
+    const rawValue = formData.cpf.replace(/\D/g, '');
+    if (rawValue.length === 11 && isValidCPF(rawValue)) {
+      setCpfError('');
+    } else if (rawValue.length > 0) {
+      setCpfError('CPF inválido. Por favor, insira um CPF válido.');
+    } else {
+      setCpfError('');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
   
     handleWhatsappBlur();
+    handleCpfBlur();
   
-    if (whatsappError) {
+    if (whatsappError || cpfError) {
       setAlert({
         message: 'Por favor, corrija os erros antes de enviar.',
         type: 'error',
@@ -77,7 +100,7 @@ const Cadastro = () => {
     const requestBody = {
       RegisterDate: new Date().toISOString().split('T')[0],
       PersonName: formData.nome,
-      Cpf: "44134412811",
+      Cpf: formData.cpf.replace(/\D/g, ''),
       Phone: "55" + formData.whatsapp.replace(/\D/g, ''),
       BirthDate: "01/01/2000",
       Mail: "default@example.com",
@@ -162,6 +185,18 @@ const Cadastro = () => {
             required
           />
           {whatsappError && <p className="error-message">{whatsappError}</p>}
+
+          <input
+            type="text"
+            name="cpf"
+            placeholder="CPF (XXX.XXX.XXX-XX)"
+            value={formData.cpf}
+            onChange={handleChange}
+            onBlur={handleCpfBlur}
+            className="input-field"
+            required
+          />
+          {cpfError && <p className="error-message">{cpfError}</p>}
 
           <div className="checkbox-container">
             <input
